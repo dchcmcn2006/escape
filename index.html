@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>방탈출 게임 - 불안의 자물쇠를 열어라!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #d4af37;
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes unlock {
+            0% { transform: rotateZ(0deg); }
+            50% { transform: rotateZ(-15deg); }
+            100% { transform: rotateZ(0deg); }
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { text-shadow: 0 0 20px rgba(212, 175, 55, 0.5); }
+            50% { text-shadow: 0 0 40px rgba(212, 175, 55, 0.8); }
+        }
+
+        @keyframes bounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.3) rotateZ(-20deg); opacity: 0; }
+            50% { transform: scale(1.15) rotateZ(3deg); opacity: 1; }
+            100% { transform: scale(1) rotateZ(0deg); opacity: 1; }
+        }
+
+        @keyframes popOut {
+            0% { transform: scale(1) rotateZ(0deg); opacity: 1; }
+            100% { transform: scale(0.3) rotateZ(-20deg); opacity: 0; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .header p {
+            color: #b8860b;
+            font-size: 16px;
+        }
+
+        /* ==================== 프로젝터 모드 (DISPLAY) ==================== */
+
+        .display-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .display-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid #d4af37;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.1);
+        }
+
+        .display-name {
+            color: #d4af37;
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .display-status {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 36px;
+        }
+
+        .display-progress {
+            color: #b8860b;
+            font-size: 13px;
+        }
+
+        .display-time {
+            color: #00ff88;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        /* ==================== 모둠 모드 (TEAM) ==================== */
+
+        .team-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .team-info {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(212, 175, 55, 0.1);
+            border-radius: 8px;
+            border: 1px solid #d4af37;
+        }
+
+        .team-info h2 {
+            color: #d4af37;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .team-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid #d4af37;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .team-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(212, 175, 55, 0.3);
+            border-color: #00ff88;
+        }
+
+        .team-name {
+            color: #d4af37;
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .locks-display {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 36px;
+            position: relative;
+            min-height: 50px;
+        }
+
+        .lock-icon {
+            position: relative;
+        }
+
+        .lock-icon.unlocking {
+            animation: unlock 0.6s;
+        }
+
+        .sparkles {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .sparkle {
+            position: absolute;
+            font-size: 24px;
+            animation: sparkle 0.6s ease-out forwards;
+        }
+
+        .sparkle:nth-child(1) { left: -15px; animation-delay: 0s; }
+        .sparkle:nth-child(2) { animation-delay: 0.1s; }
+        .sparkle:nth-child(3) { left: 15px; animation-delay: 0.2s; }
+
+        .lock-label {
+            color: #b8860b;
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .lock-progress {
+            color: #b8860b;
+            font-size: 12px;
+        }
+
+        .click-hint {
+            color: #d4af37;
+            font-size: 12px;
+            margin-top: 12px;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        /* ==================== 입력 팝업 모드 (INPUT) ==================== */
+
+        .input-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .input-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 3px solid #d4af37;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.2);
+        }
+
+        .input-title {
+            color: #d4af37;
+            margin: 0 0 20px 0;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .input-display {
+            background: #0f0f0f;
+            border: 2px solid #d4af37;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 24px;
+            letter-spacing: 12px;
+            color: #d4af37;
+            font-weight: bold;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .input-card.shaking {
+            animation: shake 0.5s;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .keypad button {
+            background: #d4af37;
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .keypad button:hover {
+            background: #e5c158;
+            transform: scale(1.05);
+        }
+
+        .keypad button:active {
+            transform: scale(0.95);
+        }
+
+        .clear-btn {
+            grid-column: span 3;
+            background: #c41e3a;
+            color: #fff;
+        }
+
+        .clear-btn:hover {
+            background: #e63946;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);
+            border: 2px solid #b8860b;
+            border-radius: 8px;
+            color: #000;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+
+        /* ==================== 메시지 팝업 ==================== */
+
+        .message-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .message-modal.hidden {
+            display: none;
+        }
+
+        .message-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 3px solid #d4af37;
+            border-radius: 16px;
+            padding: 30px 40px;
+            text-align: center;
+            min-width: 320px;
+            animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 60px rgba(212, 175, 55, 0.4);
+        }
+
+        .message-content.hiding {
+            animation: popOut 0.3s ease-in forwards;
+        }
+
+        .message-content.success {
+            border-color: #00ff88;
+        }
+
+        .message-content.error {
+            border-color: #ff6b6b;
+        }
+
+        .message-emoji {
+            font-size: 50px;
+            margin-bottom: 12px;
+            display: inline-block;
+            animation: bounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .message-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #d4af37;
+            line-height: 1.5;
+        }
+
+        .message-subtitle {
+            font-size: 13px;
+            color: #b8860b;
+            margin-top: 8px;
+        }
+
+        .message-content.success .message-text {
+            color: #00ff88;
+        }
+
+        .message-content.error .message-text {
+            color: #ff6b6b;
+        }
+
+        .rankings-container {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 3px solid #d4af37;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 30px;
+            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.2);
+        }
+
+        .rankings-title {
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .ranking-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: rgba(212, 175, 55, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid #d4af37;
+            font-size: 16px;
+        }
+
+        .ranking-item.gold {
+            background: rgba(212, 175, 55, 0.15);
+        }
+
+        .reset-btn {
+            background: #c41e3a;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .reset-btn:hover {
+            background: #e63946;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #d4af37;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .mode-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #d4af37;
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="mode-indicator" id="modeIndicator"></div>
+
+    <!-- 메시지 팝업 -->
+    <div id="messageModal" class="message-modal hidden">
+        <div id="messageContent" class="message-content">
+            <div id="messageEmoji" class="message-emoji">✨</div>
+            <div id="messageText" class="message-text"></div>
+            <div id="messageSubtitle" class="message-subtitle"></div>
+        </div>
+    </div>
+
+    <!-- 메인 컨테이너 -->
+    <div class="container">
+        <div class="header">
+            <h1>🔓 방탈출 게임 🔓</h1>
+            <p>불안의 자물쇠를 열어라!</p>
+        </div>
+
+        <!-- 프로젝터 모드 -->
+        <div id="displayMode" class="hidden">
+            <div class="display-grid" id="displayGrid"></div>
+            <div id="rankingsContainer" class="hidden">
+                <div class="rankings-container">
+                    <h2 class="rankings-title">🎉 최종 순위 🎉</h2>
+                    <div id="rankingsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 모둠 모드 -->
+        <div id="teamMode" class="hidden">
+            <div class="team-container">
+                <div class="team-info">
+                    <h2 id="teamInfoTitle">1모둠</h2>
+                    <p id="teamInfoStatus">카드를 클릭하여 입력을 시작하세요!</p>
+                </div>
+                <div class="team-card" id="teamCard" onclick="openInputWindow()">
+                    <h3 class="team-name" id="teamCardName">1모둠</h3>
+                    <div class="locks-display" id="teamCardLocks"></div>
+                    <p class="lock-label" id="teamCardLabel">Lock 1</p>
+                    <p class="lock-progress" id="teamCardProgress">진행 중...</p>
+                    <p class="click-hint">👉 클릭하여 입력 👈</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 입력 모드 -->
+        <div id="inputMode" class="hidden">
+            <div class="input-container">
+                <div class="input-card" id="inputCard">
+                    <h2 class="input-title" id="inputTitle">1모둠</h2>
+                    <div class="locks-display" id="inputLocks"></div>
+                    <p class="lock-label" id="inputLabel">Lock 1 비밀번호</p>
+                    <div class="input-display" id="inputDisplay">○ ○ ○</div>
+                    <div class="keypad" id="inputKeypad"></div>
+                    <button class="submit-btn" id="submitBtn" onclick="submitInput()">🔓 제출</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer" id="footer">
+            <button class="reset-btn" onclick="resetGame()">게임 리셋</button>
+        </div>
+    </div>
+
+    <script>
+        const ANSWERS = ['538', '863', '809'];
+        let gameState = {};
+        let startTime = Date.now();
+        let displayRefreshInterval = null;
+        let currentMode = 'display';
+        let currentTeamId = null;
+
+        // URL 파라미터 가져오기
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                mode: params.get('mode') || 'display',
+                id: params.get('id') ? parseInt(params.get('id')) : null,
+                teamId: params.get('teamId') ? parseInt(params.get('teamId')) : null
+            };
+        }
+
+        // 게임 초기화
+        function initGame() {
+            const saved = localStorage.getItem('escapeGameState');
+            if (saved) {
+                gameState = JSON.parse(saved);
+            } else {
+                gameState = {};
+                for (let i = 1; i <= 6; i++) {
+                    gameState[i] = {
+                        locks: [
+                            { input: '', solved: false },
+                            { input: '', solved: false },
+                            { input: '', solved: false }
+                        ],
+                        currentLock: 0,
+                        completedAt: null
+                    };
+                }
+                localStorage.setItem('escapeGameState', JSON.stringify(gameState));
+            }
+
+            const params = getUrlParams();
+            currentMode = params.mode;
+            currentTeamId = params.id || params.teamId;
+
+            updateModeIndicator();
+            setupMode();
+        }
+
+        function updateModeIndicator() {
+            const indicator = document.getElementById('modeIndicator');
+            if (currentMode === 'display') {
+                indicator.textContent = '📊 프로젝터';
+                indicator.style.background = '#d4af37';
+            } else if (currentMode === 'team') {
+                indicator.textContent = `📊 ${currentTeamId}모둠 현황`;
+                indicator.style.background = '#00ff88';
+            } else if (currentMode === 'input') {
+                indicator.textContent = `📝 ${currentTeamId}모둠 입력`;
+                indicator.style.background = '#ff6b6b';
+            }
+        }
+
+        function setupMode() {
+            document.getElementById('displayMode').classList.add('hidden');
+            document.getElementById('teamMode').classList.add('hidden');
+            document.getElementById('inputMode').classList.add('hidden');
+            document.getElementById('footer').classList.add('hidden');
+
+            if (currentMode === 'display') {
+                setupDisplayMode();
+            } else if (currentMode === 'team') {
+                setupTeamMode();
+            } else if (currentMode === 'input') {
+                setupInputMode();
+            }
+        }
+
+        function setupDisplayMode() {
+            document.getElementById('displayMode').classList.remove('hidden');
+            document.getElementById('footer').classList.remove('hidden');
+            renderDisplay();
+
+            if (displayRefreshInterval) clearInterval(displayRefreshInterval);
+            displayRefreshInterval = setInterval(() => {
+                const saved = localStorage.getItem('escapeGameState');
+                if (saved) {
+                    gameState = JSON.parse(saved);
+                    renderDisplay();
+                }
+            }, 500);
+        }
+
+        function renderDisplay() {
+            const grid = document.getElementById('displayGrid');
+            grid.innerHTML = '';
+
+            for (let teamId = 1; teamId <= 6; teamId++) {
+                const team = gameState[teamId];
+                const card = document.createElement('div');
+                card.className = 'display-card';
+
+                let statusText = '';
+                if (team.completedAt !== null) {
+                    statusText = `<div class="display-time">✨ 완료! ✨</div><div class="display-time">${Math.floor(team.completedAt / 60)}분 ${team.completedAt % 60}초</div>`;
+                } else {
+                    statusText = `<div class="display-progress">Lock ${team.currentLock + 1} 진행 중...</div>`;
+                }
+
+                card.innerHTML = `
+                    <h3 class="display-name">${teamId}모둠</h3>
+                    <div class="display-status">
+                        ${[0, 1, 2].map(i => `<span>${team.locks[i].solved ? '🔓' : '🔒'}</span>`).join('')}
+                    </div>
+                    ${statusText}
+                `;
+                grid.appendChild(card);
+            }
+
+            const allCompleted = Object.values(gameState).every(t => t.completedAt !== null);
+            if (allCompleted) {
+                showRankings();
+            } else {
+                document.getElementById('rankingsContainer').classList.add('hidden');
+            }
+        }
+
+        function setupTeamMode() {
+            document.getElementById('teamMode').classList.remove('hidden');
+            document.getElementById('footer').classList.remove('hidden');
+            renderTeamMode();
+
+            if (displayRefreshInterval) clearInterval(displayRefreshInterval);
+            displayRefreshInterval = setInterval(() => {
+                const saved = localStorage.getItem('escapeGameState');
+                if (saved) {
+                    gameState = JSON.parse(saved);
+                    renderTeamMode();
+                }
+            }, 500);
+        }
+
+        function renderTeamMode() {
+            const team = gameState[currentTeamId];
+            const currentLockIdx = team.currentLock;
+
+            document.getElementById('teamInfoTitle').textContent = `${currentTeamId}모둠`;
+            document.getElementById('teamCardName').textContent = `${currentTeamId}모둠`;
+            document.getElementById('teamCardLabel').textContent = `Lock ${currentLockIdx + 1}`;
+
+            if (team.completedAt !== null) {
+                document.getElementById('teamCardProgress').textContent = `✨ 완료! ${Math.floor(team.completedAt / 60)}분 ${team.completedAt % 60}초`;
+                document.getElementById('teamCard').style.cursor = 'not-allowed';
+                document.getElementById('teamCard').style.opacity = '0.7';
+            } else {
+                document.getElementById('teamCardProgress').textContent = '진행 중...';
+                document.getElementById('teamCard').style.cursor = 'pointer';
+                document.getElementById('teamCard').style.opacity = '1';
+            }
+
+            const locksHtml = [0, 1, 2].map(i => `<span>${team.locks[i].solved ? '🔓' : '🔒'}</span>`).join('');
+            document.getElementById('teamCardLocks').innerHTML = locksHtml;
+        }
+
+        function openInputWindow() {
+            const team = gameState[currentTeamId];
+            if (team.completedAt !== null) {
+                alert(`${currentTeamId}모둠은 이미 완료했습니다!`);
+                return;
+            }
+
+            const url = `${window.location.pathname}?mode=input&teamId=${currentTeamId}`;
+            window.open(url, `input_${currentTeamId}`, 'width=500,height=700,left=100,top=100');
+        }
+
+        function setupInputMode() {
+            document.getElementById('inputMode').classList.remove('hidden');
+            renderInputMode();
+        }
+
+        function renderInputMode() {
+            const team = gameState[currentTeamId];
+            const currentLockIdx = team.currentLock;
+
+            document.getElementById('inputTitle').textContent = `${currentTeamId}모둠`;
+            document.getElementById('inputLabel').textContent = `Lock ${currentLockIdx + 1} 비밀번호`;
+
+            const locksHtml = [0, 1, 2].map(i => `<span>${team.locks[i].solved ? '🔓' : '🔒'}</span>`).join('');
+            document.getElementById('inputLocks').innerHTML = locksHtml;
+
+            // 키패드 생성
+            const keypadDiv = document.getElementById('inputKeypad');
+            keypadDiv.innerHTML = '';
+
+            for (let num = 1; num <= 9; num++) {
+                const btn = document.createElement('button');
+                btn.textContent = num;
+                btn.onclick = () => handleNumButton(currentTeamId, currentLockIdx, num.toString());
+                keypadDiv.appendChild(btn);
+            }
+
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'clear-btn';
+            clearBtn.textContent = '초기화';
+            clearBtn.onclick = () => handleClear(currentTeamId, currentLockIdx);
+            clearBtn.style.gridColumn = 'span 3';
+            keypadDiv.appendChild(clearBtn);
+
+            const zeroBtn = document.createElement('button');
+            zeroBtn.textContent = '0';
+            zeroBtn.onclick = () => handleNumButton(currentTeamId, currentLockIdx, '0');
+            keypadDiv.appendChild(zeroBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'clear-btn';
+            deleteBtn.textContent = '← 삭제';
+            deleteBtn.style.gridColumn = 'span 2';
+            deleteBtn.onclick = () => handleClear(currentTeamId, currentLockIdx);
+            keypadDiv.appendChild(deleteBtn);
+
+            updateInputDisplay(currentTeamId, currentLockIdx);
+        }
+
+        function updateInputDisplay(teamId, lockIdx) {
+            const input = gameState[teamId].locks[lockIdx].input;
+            const display = document.getElementById('inputDisplay');
+            display.textContent = input.split('').map(() => '●').join(' ') || '○ ○ ○';
+        }
+
+        function saveState() {
+            localStorage.setItem('escapeGameState', JSON.stringify(gameState));
+        }
+
+        function playSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (type === 'correct') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.setValueAtTime(800, ctx.currentTime);
+                    osc.frequency.setValueAtTime(1000, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'error') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.setValueAtTime(300, ctx.currentTime);
+                    osc.frequency.setValueAtTime(200, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.2);
+                }
+            } catch (e) {
+                console.log('Sound unavailable');
+            }
+        }
+
+        function showMessageModal(type, title, message) {
+            const modal = document.getElementById('messageModal');
+            const content = document.getElementById('messageContent');
+            const emoji = document.getElementById('messageEmoji');
+            const text = document.getElementById('messageText');
+            const subtitle = document.getElementById('messageSubtitle');
+
+            content.classList.remove('hiding');
+
+            if (type === 'success') {
+                emoji.textContent = '✨🎉✨';
+                content.className = 'message-content success';
+            } else {
+                emoji.textContent = '🤔';
+                content.className = 'message-content error';
+            }
+
+            text.textContent = title;
+            subtitle.textContent = message;
+            modal.classList.remove('hidden');
+
+            setTimeout(() => {
+                content.classList.add('hiding');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }, 2000);
+        }
+
+        function handleNumButton(teamId, lockIdx, num) {
+            const current = gameState[teamId].locks[lockIdx].input;
+            if (current.length < 3) {
+                gameState[teamId].locks[lockIdx].input = current + num;
+                saveState();
+                updateInputDisplay(teamId, lockIdx);
+            }
+        }
+
+        function handleClear(teamId, lockIdx) {
+            gameState[teamId].locks[lockIdx].input = '';
+            saveState();
+            updateInputDisplay(teamId, lockIdx);
+        }
+
+        function submitInput() {
+            const team = gameState[currentTeamId];
+            const lockIdx = team.currentLock;
+            const input = team.locks[lockIdx].input;
+
+            if (input === '') return;
+
+            if (input === ANSWERS[lockIdx]) {
+                playSound('correct');
+                showMessageModal('success', `축하합니다!`, `${currentTeamId}모둠이 Lock ${lockIdx + 1}을 열었어요!`);
+
+                team.locks[lockIdx].solved = true;
+
+                if (lockIdx < 2) {
+                    team.currentLock = lockIdx + 1;
+                } else {
+                    team.completedAt = Math.floor((Date.now() - startTime) / 1000);
+                }
+
+                saveState();
+
+                setTimeout(() => {
+                    window.close();
+                }, 1500);
+            } else {
+                playSound('error');
+                showMessageModal('error', '다시 한 번 생각해봐!', '입력한 번호가 맞지 않습니다.');
+
+                team.locks[lockIdx].input = '';
+                saveState();
+                setTimeout(() => {
+                    updateInputDisplay(currentTeamId, lockIdx);
+                }, 2000);
+            }
+        }
+
+        function showRankings() {
+            const rankings = Object.entries(gameState)
+                .filter(([_, t]) => t.completedAt !== null)
+                .sort(([_, a], [__, b]) => a.completedAt - b.completedAt);
+
+            const container = document.getElementById('rankingsContainer');
+            const list = document.getElementById('rankingsList');
+
+            list.innerHTML = rankings.map(([teamId, team], idx) => {
+                const medals = ['🥇', '🥈', '🥉'];
+                const medal = medals[idx] || '';
+                return `
+                    <div class="ranking-item ${idx === 0 ? 'gold' : ''}">
+                        ${medal} <strong>${teamId}모둠</strong> - ${Math.floor(team.completedAt / 60)}분 ${team.completedAt % 60}초
+                    </div>
+                `;
+            }).join('');
+
+            container.classList.remove('hidden');
+        }
+
+        function resetGame() {
+            if (confirm('게임을 리셋하시겠습니까?')) {
+                localStorage.removeItem('escapeGameState');
+                startTime = Date.now();
+                if (displayRefreshInterval) clearInterval(displayRefreshInterval);
+                initGame();
+            }
+        }
+
+        // 시작
+        initGame();
+    </script>
+</body>
+</html>
